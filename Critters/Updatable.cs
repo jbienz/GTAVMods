@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GTA;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -103,12 +104,12 @@ namespace Critters
 			{
 				inactiveTicks = 0;
 
-				OnActiveUpdate(activeTicks, ticks);
-
 				if (activeTicks == 0)
 				{
 					OnFirstActiveUpdate(ticks);
 				}
+
+				OnActiveUpdate(activeTicks, ticks);
 
 				activeTicks++;
 			}
@@ -116,12 +117,12 @@ namespace Critters
 			{
 				activeTicks = 0;
 
-				OnInactiveUpdate(inactiveTicks, ticks);
-
 				if (inactiveTicks == 0)
 				{
 					OnFirstInactiveUpdate(ticks);
 				}
+
+				OnInactiveUpdate(inactiveTicks, ticks);
 
 				inactiveTicks++;
 			}

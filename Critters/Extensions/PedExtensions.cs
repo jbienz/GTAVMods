@@ -71,7 +71,7 @@ namespace Critters
 
 		static public PedType GetPedType(this Ped ped)
 		{
-			return (PedType)Function.Call<int>(Hash.GET_PED_TYPE, ped.Handle);
+			return (PedType)Function.Call<int>(Hash.GET_PED_TYPE, ped);
 		}
 
 		static public AnimalClass GetAnimalClass(this Model model)
@@ -118,42 +118,37 @@ namespace Critters
 
 		static public int GetRelationship(this Ped ped, Ped other)
 		{
-			return Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_PEDS, ped.Handle, other.Handle);
+			return Function.Call<int>(Hash.GET_RELATIONSHIP_BETWEEN_PEDS, ped, other);
 		}
 
-		static public bool IsGroupMember(this Ped ped, Group group)
+		static public bool IsGroupMember(this Ped ped, int groupId)
 		{
-			return Function.Call<bool>(Hash.IS_PED_GROUP_MEMBER, ped.Handle, group.Handle);
+			return Function.Call<bool>(Hash.IS_PED_GROUP_MEMBER, ped, groupId);
 		}
 
 		static public bool IsInGroup(this Ped ped)
 		{
-			return Function.Call<bool>(Hash.IS_PED_IN_GROUP, ped.Handle);
+			return Function.Call<bool>(Hash.IS_PED_IN_GROUP, ped);
 		}
 
 		static public void RemoveFromGroup(this Ped ped)
 		{
-			Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped.Handle);
+			Function.Call(Hash.REMOVE_PED_FROM_GROUP, ped);
 		}
 
-		static public void SetAsGroupLeader(this Ped ped, Group group)
+		static public void SetAsGroupLeader(this Ped ped, int groupId)
 		{
-			Function.Call(Hash.SET_PED_AS_GROUP_LEADER, ped.Handle, group.Handle);
+			Function.Call(Hash.SET_PED_AS_GROUP_LEADER, ped, groupId);
 		}
 
 		static public void SetAsGroupMember(this Ped ped, int groupId)
 		{
-			Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, ped.Handle, groupId);
-		}
-
-		static public void SetAsGroupMember(this Ped ped, Group group)
-		{
-			SetAsGroupMember(ped, group.Handle);
+			Function.Call(Hash.SET_PED_AS_GROUP_MEMBER, ped, groupId);
 		}
 
 		static public void SetNeverLeavesGroup(this Ped ped, bool neverLeaves)
 		{
-			Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, ped.Handle, neverLeaves);
+			Function.Call(Hash.SET_PED_NEVER_LEAVES_GROUP, ped, neverLeaves);
 		}
 	}
 }

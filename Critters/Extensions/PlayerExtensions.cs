@@ -10,10 +10,9 @@ namespace Critters
 {
 	static public class PlayerExtensions
 	{
-		static public Group GetPlayerGroup(this Player player)
+		static public int GetPlayerGroup(this Player player)
 		{
-			var groupId = Function.Call<int>(Hash.GET_PLAYER_GROUP, player.Handle);
-			return new Group(groupId);
+			return Function.Call<int>(Hash.GET_PLAYER_GROUP, player);
 		}
 
 	}

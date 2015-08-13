@@ -1,5 +1,6 @@
 ﻿using GTA;
 using GTA.Math;
+using GTA.Native;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +13,28 @@ namespace Critters
 	{
 		#region Constants
 		private const float AroundPlayerRange = 3f;
+		private const string CritterEnemyRName = "CritterEnemy";
+		private const int CritterHealth = 200;
 		private const float SeparationRange = 150f;
 		private readonly Vector3 SeparationRange3D = new Vector3(SeparationRange, SeparationRange, SeparationRange);
+		private readonly TimeSpan BirdReleaseTime = TimeSpan.FromSeconds(10);
 		#endregion // Constants
 
 		#region Member Variables
+		// Collections
 		private List<Ped> critters;
-		// private Group critterGroup;
 		private List<Ped> enemies;
-		private Group enemyGroup;
+		
+		// Groups
+		private int playerGroup;
+		
+		// Relationship Groups
+		private int enemyRGroup;
+		private int playerRGroup;
+		
+		// Misc
 		private DateTime lastCleanTime = DateTime.Now;
+		private DateTime lastCallTime = DateTime.Now;
 		#endregion // Member Variables
 
 		#region Internal Methods
@@ -38,24 +51,12 @@ namespace Critters
 
 		private void BefriendCritter(Ped critter)
 		{
-			// Only add to critters list once
-			if (critters.Contains(critter)) { return; }
-
-			// Add to critters list
-			critters.Add(critter);
-
 			// Shortcut to player
 			var player = Game.Player.Character;
 
-			// Turn on friendly blip
-			if (critter.CurrentBlip == null)
-			{
-				critter.AddBlip();
-			}
-			critter.CurrentBlip.IsFriendly = true;
-
 			// Get the animal class
 			var animalClass = critter.Model.GetAnimalClass();
+			bool isBird = (animalClass == AnimalClass.Flying);
 			if (animalClass == AnimalClass.Unknown)
 			{
 				UI.Notify(string.Format("Unknown Animal: {0}", critter.Model));
@@ -66,32 +67,54 @@ namespace Critters
 				UI.Notify(string.Format("Animal Class: {0}", animalClass));
 			}
 
+			// Turn on friendly blip
+			if (critter.CurrentBlip == null)
+			{
+				critter.AddBlip();
+			}
+			critter.CurrentBlip.IsFriendly = true;
+			critter.CurrentBlip.Scale = 0.7f;
 
-			// Get the player group
-			var playerGroup = Game.Player.GetPlayerGroup();
+			// Make the critter run (or fly) to the player
+			critter.TaskHurryToEntity(player);
 
-			UI.Notify("Player In Group: " + playerGroup.Handle);
+			// Only add to collection once
+			if (!critters.Contains(critter)) { critters.Add(critter); }
 
-				
-			// Add critter to player group
+			// We don't add birds to the actual group because they can't fight
+			if (isBird) { return; }
+
+			// Super health the critter
+			critter.MaxHealth = CritterHealth;
+			critter.Health = CritterHealth;
+
+			// Set the critter into the players relationship grip
+			critter.RelationshipGroup = playerRGroup;
+
+			// Set the critter into players group
 			critter.SetAsGroupMember(playerGroup);
 
-			// Find a place close to the player for the critter to run / land
-			var posNear = player.Position.Around(AroundPlayerRange);
+			// Make sure the critter will never leave the group (unless told to do so)
+			critter.SetNeverLeavesGroup(true);
 
-			// critter.Weapons.Give(GTA.Native.WeaponHash.Pistol, 100, true, true);
-			critter.TaskHurryToEntity(player);
-			critter.Task.FightAgainstHatedTargets(5000f);
+			// Allow switch weapons (and fight?)
+			critter.CanSwitchWeapons = true;
+
+			// Block critter non-temporary events
+			Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, critter, true);
+
+			// Critter never flees
+			Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, critter, 0, 0);
+
+			// Critter fights to the death
+			Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, critter, 46, true);
+			// Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, critter, 17, true);
+
+			// Critter fights hated targets
+			critter.Task.FightAgainstHatedTargets(50000f);
+			
+			// Critter never stops fighting
 			critter.AlwaysKeepTask = true;
-			/*
-			// The following needs to be done as a task sequence
-			var seq = new TaskSequence();
-			seq.AddTask.RunTo(posNear);
-			seq.AddTask.FightAgainstHatedTargets(5000f);
-			seq.Close();
-			critter.AlwaysKeepTask = true;
-			critter.Task.PerformSequence(seq);
-			 */
 		}
 
 		private void Cleanup()
@@ -105,12 +128,14 @@ namespace Critters
 				return;
 			}
 
-			// Long enough
+			// Update last clean time
 			lastCleanTime = now;
+
+			// Have we passed bird release time?
+			var shouldReleaseBirds = ((now - lastCallTime) >= BirdReleaseTime);
 
 			// Shortcut
 			var player = Game.Player.Character;
-			// UI.Notify("Player Group: ")
 
 			// Thread safe
 			lock (critters)
@@ -120,8 +145,11 @@ namespace Critters
 					// Get critter object
 					var critter = critters[i];
 
-					// If dead or too far away, let it go
-					if ((critter.Health < 1) || (!critter.IsNearEntity(player, SeparationRange3D)))
+					// Is it a bird?
+					bool isBird = (critter.Model.GetAnimalClass() == AnimalClass.Flying);
+					
+					// If bird, dead or too far away, let it go
+					if ((isBird && shouldReleaseBirds) || (!isBird && critter.Health < 1) || (!critter.IsNearEntity(player, SeparationRange3D)))
 					{
 						if (critter.CurrentBlip != null)
 						{
@@ -129,6 +157,7 @@ namespace Critters
 						}
 						critter.RemoveFromGroup();
 						critters.RemoveAt(i);
+						critter.MarkAsNoLongerNeeded();
 					}
 					else
 					{
@@ -138,12 +167,56 @@ namespace Critters
 				}
 			}
 		}
+
+		private void CreateCollections()
+		{
+			if (critters == null)
+			{
+				critters = new List<Ped>();
+			}
+			if (enemies == null)
+			{
+				enemies = new List<Ped>();
+			}
+		}
+
+		private void CreateGroupsAndRelationships()
+		{
+			// Shortcut to player character
+			var player = Game.Player.Character;
+			UI.Notify("Before GetPlayerGroup");
+			// Get the player group
+			playerGroup = Game.Player.GetPlayerGroup();
+
+			UI.Notify("Before Cougar");
+			// Get the player relationship group
+			// playerRGroup = player.RelationshipGroup;
+			int playerRGroup = Function.Call<int>(Hash.GET_HASH_KEY, "COUGAR");
+			player.RelationshipGroup = playerRGroup;
+			UI.Notify(string.Format("Cougar Group: {0}", playerRGroup));
+
+			// Create the enemy relationship group
+			enemyRGroup = World.AddRelationshipGroup(CritterEnemyRName);
+			
+			//// Set the relationship between both groups (hint: it's not good)
+			World.SetRelationshipBetweenGroups(Relationship.Hate, enemyRGroup, playerRGroup);
+			World.SetRelationshipBetweenGroups(Relationship.Hate, playerRGroup, enemyRGroup);
+		}
 		#endregion // Internal Methods
 
 		#region Overrides / Event Handlers
 		protected override void OnActiveUpdate(int activeTicks, int totalTicks)
 		{
 			base.OnActiveUpdate(activeTicks, totalTicks);
+
+			// See if player is targeting a ped
+			var target = Game.Player.GetTargetedEntity() as Ped;
+
+			// If we have a target and it's not already an enemy, make it one
+			if ((target != null) && (target.RelationshipGroup != enemyRGroup))
+			{
+				MakeEnemy(target);
+			}
 
 			// Ignore if not at least 60 ticks
 			if (activeTicks % 60 == 0)
@@ -154,21 +227,14 @@ namespace Critters
 
 		protected override void OnFirstActiveUpdate(int totalTicks)
 		{
+			// Call base first
 			base.OnFirstActiveUpdate(totalTicks);
 
-			// Create collections and groups
-			if (critters == null)
-			{
-				critters = new List<Ped>();
-			}
-			if (enemies == null)
-			{
-				enemies = new List<Ped>();
-			}
-			if (enemyGroup == null)
-			{
-				enemyGroup = WorldExtensions.CreateGroup();
-			}
+			// Create collections
+			CreateCollections();
+
+			// Create groups and relationships
+			CreateGroupsAndRelationships();
 		}
 		#endregion // Overrides / Event Handlers
 
@@ -178,6 +244,9 @@ namespace Critters
 		/// </summary>
 		public void FindCritters()
 		{
+			// Update last call time
+			lastCallTime = DateTime.Now;
+
 			// Shortcut
 			var player = Game.Player.Character;
 
@@ -215,6 +284,15 @@ namespace Critters
 					BefriendCritter(critter);
 				}
 			}
+		}
+
+		public void MakeEnemy(Ped ped)
+		{
+			// Notify player
+			UI.Notify(string.Format("Making an enemy out of {0}", ped.GetPedType()));
+
+			// Set ped into enemy relationship group
+			ped.RelationshipGroup = enemyRGroup;
 		}
 		#endregion // Public Methods
 	}

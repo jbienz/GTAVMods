@@ -55,7 +55,6 @@
     <Compile Include="Extensions\PlayerExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\WorldExtensions.cs" />
-    <Compile Include="Group.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Updatable.cs" />
   </ItemGroup>

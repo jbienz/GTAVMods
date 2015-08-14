@@ -116,22 +116,11 @@ namespace Critters
 				return false;
 			}
 
-			// Did we have a target when we started?
-			bool hadTarget = (target != null);
-
 			// If there is a target, check to see if it's alive and has health
-			if (hadTarget)
+			if (target != null)
 			{
 				// Is target still alive?
-				if ((target.IsAlive) && (target.Health > 0))
-				{
-					// Attack again
-					AttackTarget();
-
-					// Still alive
-					return true;
-				}
-				else
+				if ((!target.IsAlive) || (target.Health <= 0))
 				{
 					// Target has died and is no longer needed
 					Log.Debug("Target has died");
@@ -140,7 +129,7 @@ namespace Critters
 				}
 			}
 
-			// If we've gotten here and target is still null, see if we should try and find one
+			// If don't have a target now, see if we should try and find one
 			if (target == null)
 			{
 				// Try to find a new one?
@@ -151,9 +140,10 @@ namespace Critters
 				}
 			}
 
-			// If we have no target, follow. This will bring back shy animals.
+			// What time is it?
 			var now = DateTime.Now;
 
+			// If we have a target, see if we need to do a refresh attack
 			if (target != null)
 			{
 				if ((now - lastAttackTime) > REFRESH_ATTACK)
@@ -163,6 +153,7 @@ namespace Critters
 					AttackTarget();
 				}
 			}
+			// If we don't have a target, see if we need to do a refresh follow
 			else
 			{
 				if ((now - lastFollowTime) > REFRESH_FOLLOW)
@@ -173,7 +164,7 @@ namespace Critters
 				}
 			}
 
-			// Do we have a target?
+			// This method returns true if it completed with a valid target
 			return (target != null);
 		}
 

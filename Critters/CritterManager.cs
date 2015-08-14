@@ -9,20 +9,63 @@ using System.Threading.Tasks;
 
 namespace Critters
 {
+	/// <summary>
+	/// Methods for finding a target
+	/// </summary>
+	public enum FindTargetMethod
+	{
+		/// <summary>
+		/// Any ped that is fighting with the player
+		/// </summary>
+		/// <remarks>
+		/// This has the effect of deffending the player.
+		/// </remarks>
+		CombatingPlayer,
+		
+		/// <summary>
+		/// Any ped that the player is targeting.
+		/// </summary>
+		/// <remarks>
+		/// This has the effect of going on the offense but only when the player starts it.
+		/// </remarks>
+		PlayerIsTargeting,
+
+		/// <summary>
+		/// Any ped that hates the player
+		/// </summary>
+		/// <remarks>
+		/// This has the effect of going on the offense all the time.
+		/// </remarks>
+		HatesPlayer,
+
+		/// <summary>
+		/// Ped closest to the player regardless of relationship
+		/// </summary>
+		/// <remarks>
+		/// This should be used one-shot.
+		/// </remarks>
+		ClosestPlayer
+	}
+
 	public class CritterManager : Updatable
 	{
 		#region Constants
 		private const float AroundPlayerRange = 3f;
 		private const string CritterEnemyRName = "CritterEnemy";
 		private const int CritterHealth = 200;
+		private const int PrimaryCritterCount = 8;
 		private const float SeparationRange = 150f;
 		private readonly Vector3 SeparationRange3D = new Vector3(SeparationRange, SeparationRange, SeparationRange);
-		private readonly TimeSpan BirdReleaseTime = TimeSpan.FromSeconds(10);
+		private readonly TimeSpan InvalidReleaseTime = TimeSpan.FromSeconds(10);
+		private readonly TimeSpan CleanTime = TimeSpan.FromSeconds(5);
+		private readonly TimeSpan TargetTime = TimeSpan.FromSeconds(3);
 		#endregion // Constants
 
 		#region Member Variables
 		// Collections
-		private List<Ped> critters;
+		private List<int> critterIds;
+		private List<Critter> primaryCritters;
+		private List<Critter> secondaryCritters;
 		private List<Ped> enemies;
 		
 		// Groups
@@ -35,6 +78,8 @@ namespace Critters
 		// Misc
 		private DateTime lastCleanTime = DateTime.Now;
 		private DateTime lastCallTime = DateTime.Now;
+		private DateTime lastTargetTime = DateTime.Now;
+		private FindTargetMethod targetMethod = FindTargetMethod.CombatingPlayer;
 		#endregion // Member Variables
 
 		#region Internal Methods
@@ -49,130 +94,84 @@ namespace Critters
 				ped.Task.PerformSequence( seq ); 
 			 */
 
-		private void BefriendCritter(Ped critter)
+		private void Cleanup(List<Critter> list, bool shouldReleaseInvalids, Ped player)
 		{
-			// Shortcut to player
-			var player = Game.Player.Character;
-
-			// Get the animal class
-			var animalClass = critter.Model.GetAnimalClass();
-			bool isBird = (animalClass == AnimalClass.Flying);
-			if (animalClass == AnimalClass.Unknown)
+			for (int i = list.Count - 1; i >= 0; i--)
 			{
-				UI.Notify(string.Format("Unknown Animal: {0}", critter.Model));
-				critter.CurrentBlip.IsFlashing = true;
+				// Get critter objects
+				var critter = list[i];
+				var critterPed = critter.Ped;
+
+				// If it's a bird that needs to be released, or it's dead, or it's too far away, unfriend it
+				if ((!critter.IsAllowedInGroup && shouldReleaseInvalids) || (!critter.IsAlive) || (!critterPed.IsNearEntity(player, SeparationRange3D)))
+				{
+					// Died?
+					if (!critter.IsAlive)
+					{
+						Log.Info("A critter has died :(");
+					}
+
+					// Unfriend
+					critter.Unfriend();
+
+					// Remove from lists
+					critterIds.Remove(critter.Ped.Handle);
+					list.RemoveAt(i);
+
+					// If this is the primary list, see if we need to promote
+					if (list == primaryCritters)
+					{
+						// Find the most powerful critter
+						var strongest = secondaryCritters.OrderBy(c => c.Strenth).FirstOrDefault();
+
+						// If we found one, promote it
+						if (strongest != null)
+						{
+							Log.Debug(string.Format("Space available, promoting {0}", strongest.AnimalName));
+							Promote(strongest);
+						}
+					}
+				}
+				#if DEBUG
+				else
+				{
+					var msg = string.Format("Re: {0} He: {1} G: {2} A: {3} H: {4}", critterPed.GetRelationshipWithPed(player), critterPed.Health, critterPed.IsInGroup(), critter.IsAlive, critter.Ped.Model);
+					Log.Debug(msg);
+				}
+				#endif
 			}
-			else
-			{
-				UI.Notify(string.Format("Animal Class: {0}", animalClass));
-			}
-
-			// Turn on friendly blip
-			if (critter.CurrentBlip == null)
-			{
-				critter.AddBlip();
-			}
-			critter.CurrentBlip.IsFriendly = true;
-			critter.CurrentBlip.Scale = 0.7f;
-
-			// Make the critter run (or fly) to the player
-			critter.TaskHurryToEntity(player);
-
-			// Only add to collection once
-			if (!critters.Contains(critter)) { critters.Add(critter); }
-
-			// We don't add birds to the actual group because they can't fight
-			if (isBird) { return; }
-
-			// Super health the critter
-			critter.MaxHealth = CritterHealth;
-			critter.Health = CritterHealth;
-
-			// Set the critter into the players relationship grip
-			critter.RelationshipGroup = playerRGroup;
-
-			// Set the critter into players group
-			critter.SetAsGroupMember(playerGroup);
-
-			// Make sure the critter will never leave the group (unless told to do so)
-			critter.SetNeverLeavesGroup(true);
-
-			// Allow switch weapons (and fight?)
-			critter.CanSwitchWeapons = true;
-
-			// Block critter non-temporary events
-			Function.Call(Hash.SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, critter, true);
-
-			// Critter never flees
-			Function.Call(Hash.SET_PED_FLEE_ATTRIBUTES, critter, 0, 0);
-
-			// Critter fights to the death
-			Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, critter, 46, true);
-			// Function.Call(Hash.SET_PED_COMBAT_ATTRIBUTES, critter, 17, true);
-
-			// Critter fights hated targets
-			critter.Task.FightAgainstHatedTargets(50000f);
-			
-			// Critter never stops fighting
-			critter.AlwaysKeepTask = true;
 		}
 
-		private void Cleanup()
+		private void Cleanup(bool shouldReleaseInvalids)
 		{
-			// Get current time
-			var now = DateTime.Now;
-
-			// Only do this every 3 seconds
-			if ((now - lastCleanTime) < TimeSpan.FromSeconds(3))
-			{
-				return;
-			}
-
-			// Update last clean time
-			lastCleanTime = now;
-
-			// Have we passed bird release time?
-			var shouldReleaseBirds = ((now - lastCallTime) >= BirdReleaseTime);
-
+			Log.Debug("Clean: " + shouldReleaseInvalids);
 			// Shortcut
 			var player = Game.Player.Character;
 
 			// Thread safe
-			lock (critters)
+			lock (primaryCritters)
 			{
-				for (int i = critters.Count - 1; i >= 0; i--)
+				lock (secondaryCritters)
 				{
-					// Get critter object
-					var critter = critters[i];
-
-					// Is it a bird?
-					bool isBird = (critter.Model.GetAnimalClass() == AnimalClass.Flying);
-					
-					// If bird, dead or too far away, let it go
-					if ((isBird && shouldReleaseBirds) || (!isBird && critter.Health < 1) || (!critter.IsNearEntity(player, SeparationRange3D)))
-					{
-						if (critter.CurrentBlip != null)
-						{
-							critter.CurrentBlip.Remove();
-						}
-						critter.RemoveFromGroup();
-						critters.RemoveAt(i);
-						critter.MarkAsNoLongerNeeded();
-					}
-					else
-					{
-						var msg = string.Format("Re: {0} He: {1} G: {2} A: {3} D: {4}", critter.GetRelationshipWithPed(player), critter.Health, critter.IsInGroup(), critter.IsAlive, critter.IsDead);
-						UI.Notify(msg);
-					}
+					Cleanup(primaryCritters, shouldReleaseInvalids, player);
+					Cleanup(secondaryCritters, shouldReleaseInvalids, player);
 				}
 			}
 		}
 
 		private void CreateCollections()
 		{
-			if (critters == null)
+			if (critterIds == null)
 			{
-				critters = new List<Ped>();
+				critterIds = new List<int>();
+			}
+			if (primaryCritters == null)
+			{
+				primaryCritters = new List<Critter>();
+			}
+			if (secondaryCritters == null)
+			{
+				secondaryCritters = new List<Critter>();
 			}
 			if (enemies == null)
 			{
@@ -184,23 +183,70 @@ namespace Critters
 		{
 			// Shortcut to player character
 			var player = Game.Player.Character;
-			UI.Notify("Before GetPlayerGroup");
+
 			// Get the player group
 			playerGroup = Game.Player.GetPlayerGroup();
 
-			UI.Notify("Before Cougar");
 			// Get the player relationship group
-			// playerRGroup = player.RelationshipGroup;
-			int playerRGroup = Function.Call<int>(Hash.GET_HASH_KEY, "COUGAR");
-			player.RelationshipGroup = playerRGroup;
-			UI.Notify(string.Format("Cougar Group: {0}", playerRGroup));
+			playerRGroup = player.RelationshipGroup;
 
 			// Create the enemy relationship group
 			enemyRGroup = World.AddRelationshipGroup(CritterEnemyRName);
 			
-			//// Set the relationship between both groups (hint: it's not good)
+			// Set the relationship between both groups (hint: it's not good)
 			World.SetRelationshipBetweenGroups(Relationship.Hate, enemyRGroup, playerRGroup);
 			World.SetRelationshipBetweenGroups(Relationship.Hate, playerRGroup, enemyRGroup);
+		}
+		
+		private void Demote(Critter weaker)
+		{
+			// Remove the weaker critter from the primary group
+			weaker.Ped.RemoveFromGroup();
+
+			// Reassign relationship group
+			weaker.Ped.RelationshipGroup = playerRGroup;
+
+			// Remove from primary collection
+			primaryCritters.Remove(weaker);
+
+			// Add to secondary collection
+			secondaryCritters.Add(weaker);
+		}
+
+		private void FindTargets()
+		{
+			// Thread safe
+			lock (primaryCritters)
+			{
+				for (int i=0; i < primaryCritters.Count; i++)
+				{
+					// Check on targets and find new
+					primaryCritters[i].CheckOnTarget(targetMethod);
+				}
+			}
+			lock (secondaryCritters)
+			{
+				for (int i = 0; i < secondaryCritters.Count; i++)
+				{
+					// Check on targets and find new
+					secondaryCritters[i].CheckOnTarget(targetMethod);
+				}
+			}
+		}
+
+		private void Promote(Critter critter)
+		{
+			// Add the critter to the primary group
+			critter.Ped.SetAsGroupMember(playerGroup);
+
+			// Reassign relationship group
+			critter.Ped.RelationshipGroup = playerRGroup;
+
+			// Remove from secondary collection
+			secondaryCritters.Remove(critter);
+
+			// Add to primary collection
+			primaryCritters.Add(critter);
 		}
 		#endregion // Internal Methods
 
@@ -219,9 +265,32 @@ namespace Critters
 			}
 
 			// Ignore if not at least 60 ticks
-			if (activeTicks % 60 == 0)
+			if (activeTicks % 60 != 0) { return; }
+
+			// Get current time
+			var now = DateTime.Now;
+
+			// Time to cleanup?
+			if ((now - lastCleanTime) > CleanTime)
 			{
-				Cleanup();
+				// Update last clean time
+				lastCleanTime = now;
+
+				// Have we passed invalid release time?
+				var shouldReleaseInvalids = ((now - lastCallTime) >= InvalidReleaseTime);
+
+				// Clean
+				Cleanup(shouldReleaseInvalids);
+			}
+
+			// Time to retarget?
+			if ((now - lastTargetTime) > TargetTime)
+			{
+				// Update last target time
+				lastTargetTime = now;
+
+				// Target
+				FindTargets();
 			}
 		}
 
@@ -275,13 +344,75 @@ namespace Critters
 			var msg = string.Format("Found {0} critters!", newCritters.Count);
 			UI.ShowSubtitle(msg);
 
-			// Lock master list
-			lock (critters)
+			// Lock master lists
+			lock (primaryCritters)
 			{
-				// Befriend each critter
-				foreach (var critter in newCritters)
+				lock (secondaryCritters)
 				{
-					BefriendCritter(critter);
+					// Befriend each critter
+					foreach (var critterPed in newCritters)
+					{
+						// If we already know about it, skip
+						if (critterIds.Contains(critterPed.Handle))
+						{
+							// Log.Debug("Skipping known critter");
+							continue;
+						}
+
+						// Now we know about it
+						critterIds.Add(critterPed.Handle);
+
+						// Create critter object
+						var critter = new Critter(critterPed);
+
+						// Default to secondary collection and group
+						List<Critter> addList = secondaryCritters;
+						int addGroup = 0;
+
+						Log.Debug(string.Format("Critters in Group P: {0} S: {1}", primaryCritters.Count, secondaryCritters.Count));
+
+						// If primary group isn't full and critters is allowed in group, switch to primary
+						if ((primaryCritters.Count < PrimaryCritterCount) && (critter.IsAllowedInGroup))
+						{
+							Log.Debug("Room available in priamry");
+							addList = primaryCritters;
+							addGroup = playerGroup;
+						}
+						else
+						{
+							// If critter is allowed in primary group at this point in time then we don't have enough slots
+							// See if we can demote find a weaker one
+							if (critter.IsAllowedInGroup)
+							{
+								// Find weaker critter in primary list
+								var weaker = primaryCritters.Where(c => c.Strenth < critter.Strenth).FirstOrDefault();
+
+								// If we found a weaker critter, demote it.
+								if (weaker != null)
+								{
+									// Notify of demotion
+									Log.Debug(string.Format("{0} being demoted for {1}", weaker.AnimalName, critter.AnimalName));
+
+									// Demote the critter
+									Demote(weaker);
+
+									// Switch to primary
+									addList = primaryCritters;
+									addGroup = playerGroup;
+								}
+							}
+							else
+							{
+								Log.Debug(string.Format("Critter not allowed in primary group: {0}", critter.AnimalName));
+							}
+						}
+
+						// Add to target list
+						addList.Add(critter);
+
+						// Befriend the critter
+						critter.Befriend(addGroup, playerRGroup);
+					}
 				}
 			}
 		}
@@ -289,7 +420,7 @@ namespace Critters
 		public void MakeEnemy(Ped ped)
 		{
 			// Notify player
-			UI.Notify(string.Format("Making an enemy out of {0}", ped.GetPedType()));
+			Log.Debug(string.Format("Hating on {0}", ped.GetPedType()));
 
 			// Set ped into enemy relationship group
 			ped.RelationshipGroup = enemyRGroup;

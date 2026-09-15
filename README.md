@@ -1,6 +1,6 @@
 # GTA V Enhanced Mods
 
-A collection of C# gameplay mods for Grand Theft Auto V Enhanced. Each mod is self-contained under `Mods`, with its script, configuration, and detailed documentation kept together.
+A collection of mods for Grand Theft Auto V Enhanced. Each mod is self-contained under `Mods`, with its script, configuration, and detailed documentation kept together.
 
 ## Requirements
 

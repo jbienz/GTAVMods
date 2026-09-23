@@ -16,17 +16,15 @@ Grand Theft Auto V Enhanced/
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| `F11` | Spawn a Deluxo ahead of the player. |
+The default direct key is disabled. When `ExntrcMenu` is installed, use `SpawnDeluxo > Spawn Deluxo`.
 
-The key can be changed through `SpawnDeluxo.ini`.
+Set `SpawnKey` in `SpawnDeluxo.ini` to any `System.Windows.Forms.Keys` name to enable a direct shortcut. SpawnDeluxo remains fully usable without the menu when a direct key is configured.
 
 ## Configuration
 
 | Setting | Default | Description |
 | --- | ---: | --- |
-| `SpawnKey` | `F11` | Key used to spawn the Deluxo. |
+| `SpawnKey` | `None` | Optional direct key used to spawn the Deluxo. `None` disables the shortcut. |
 | `SpawnDistanceMeters` | `5` | Distance ahead of the player where the vehicle is created. Values below `2` are raised to `2`. |
 
 ## Behavior

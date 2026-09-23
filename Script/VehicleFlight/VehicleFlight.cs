@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 using GTA;
 using GTA.UI;
@@ -10,7 +11,7 @@ public sealed class VehicleFlight : Script
     public VehicleFlight()
     {
         ScriptSettings settings = ScriptSettings.Load(@"scripts\VehicleFlight\VehicleFlight.ini");
-        toggleKey = ReadKey(settings, "ToggleKey", Keys.F10);
+        toggleKey = ReadKey(settings, "ToggleKey", Keys.None);
 
         KeyDown += OnKeyDown;
     }
@@ -30,11 +31,18 @@ public sealed class VehicleFlight : Script
 
     private void OnKeyDown(object sender, KeyEventArgs eventArgs)
     {
-        if (eventArgs.KeyCode != toggleKey)
+        if (toggleKey == Keys.None || eventArgs.KeyCode != toggleKey)
         {
             return;
         }
 
+        ToggleVehicleFlight();
+    }
+
+    [Browsable(true)]
+    [Description("Toggle Vehicle Flight")]
+    private void ToggleVehicleFlight()
+    {
         Ped player = Game.LocalPlayerPed;
         if (player == null || !player.Exists() || !player.IsInVehicle())
         {

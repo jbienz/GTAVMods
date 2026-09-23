@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 using GTA;
 using GTA.Math;
@@ -14,7 +15,7 @@ public sealed class SpawnDeluxo : Script
     public SpawnDeluxo()
     {
         ScriptSettings settings = ScriptSettings.Load(@"scripts\SpawnDeluxo\SpawnDeluxo.ini");
-        spawnKey = ReadKey(settings, "SpawnKey", Keys.F11);
+        spawnKey = ReadKey(settings, "SpawnKey", Keys.None);
         spawnDistanceMeters = Math.Max(2.0f, settings.GetValue("SpawnDeluxo", "SpawnDistanceMeters", DefaultSpawnDistanceMeters));
 
         KeyDown += OnKeyDown;
@@ -35,11 +36,18 @@ public sealed class SpawnDeluxo : Script
 
     private void OnKeyDown(object sender, KeyEventArgs eventArgs)
     {
-        if (eventArgs.KeyCode != spawnKey)
+        if (spawnKey == Keys.None || eventArgs.KeyCode != spawnKey)
         {
             return;
         }
 
+        SpawnVehicle();
+    }
+
+    [Browsable(true)]
+    [Description("Spawn Deluxo")]
+    private void SpawnVehicle()
+    {
         Ped player = Game.LocalPlayerPed;
         if (player == null || !player.Exists())
         {

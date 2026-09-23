@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows.Forms;
 using GTA;
 using GTA.Native;
@@ -95,17 +96,15 @@ public sealed class FriendAndFoe : Script
 
         if (eventArgs.KeyCode == recruitKey)
         {
-            RecruitNearbyPeds(player);
+            RecruitNearbyPeds();
         }
         else if (eventArgs.KeyCode == hostileKey)
         {
-            EnrageNearbyPeds(player);
+            MakeNearbyPedsHostile();
         }
         else if (eventArgs.KeyCode == dismissKey)
         {
-            int affectedCount = crew.Count + hostiles.Count;
-            RestoreAllPeds();
-            ShowMessage("FriendAndFoe reset " + affectedCount + " NPC(s).");
+            DismissCrewAndResetNpcs();
         }
     }
 
@@ -128,6 +127,44 @@ public sealed class FriendAndFoe : Script
         }
 
         RefreshCombatTasks(player);
+    }
+
+    [Browsable(true)]
+    [Category("NPC Commands")]
+    [Description("Recruit Nearby NPCs")]
+    private void RecruitNearbyPeds()
+    {
+        Ped player = Game.LocalPlayerPed;
+        if (!IsUsablePed(player))
+        {
+            return;
+        }
+
+        RecruitNearbyPeds(player);
+    }
+
+    [Browsable(true)]
+    [Category("NPC Commands")]
+    [Description("Make Nearby NPCs Hostile")]
+    private void MakeNearbyPedsHostile()
+    {
+        Ped player = Game.LocalPlayerPed;
+        if (!IsUsablePed(player))
+        {
+            return;
+        }
+
+        EnrageNearbyPeds(player);
+    }
+
+    [Browsable(true)]
+    [Category("NPC Commands")]
+    [Description("Dismiss Crew and Reset NPCs")]
+    private void DismissCrewAndResetNpcs()
+    {
+        int affectedCount = crew.Count + hostiles.Count;
+        RestoreAllPeds();
+        ShowMessage("FriendAndFoe reset " + affectedCount + " NPC(s).");
     }
 
     private void OnAborted(object sender, EventArgs eventArgs)

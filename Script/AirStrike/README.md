@@ -16,11 +16,11 @@ Grand Theft Auto V Enhanced/
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| `F8` | Start an air strike in the direction the player is facing. |
+The default direct key is disabled. When `ExntrcMenu` is installed, use `AirStrike > Call Air Strike`.
 
-The activation key is currently fixed in the script. Activating the mod during an active strike restarts the sequence from the player's new position and facing direction.
+Set `ActivationKey` in `AirStrike.ini` to any `System.Windows.Forms.Keys` name to enable a direct shortcut. AirStrike remains fully usable without the menu when a direct key is configured.
+
+Activating the mod during an active strike restarts the sequence from the player's new position and facing direction.
 
 ## Configuration
 
@@ -28,6 +28,7 @@ Settings are read from `AirStrike.ini` when the script loads.
 
 | Setting | Default | Description |
 | --- | ---: | --- |
+| `ActivationKey` | `None` | Optional direct key used to call an air strike. `None` disables the shortcut. |
 | `ExplosionCount` | `6` | Number of explosions in one strike. Values below `1` are raised to `1`. |
 | `FirstExplosionDistanceYards` | `10` | Distance from the player to the first explosion. Values below `0` are raised to `0`. |
 | `TotalDistanceYards` | `30` | Distance from the player to the final explosion. This cannot be less than the first-explosion distance. |

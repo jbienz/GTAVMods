@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 using GTA;
 using GTA.Math;
@@ -11,6 +12,7 @@ public sealed class AirStrike : Script
     private const float DefaultTotalDistanceYards = 30.0f;
     private const int DefaultExplosionDelayMilliseconds = 1000;
 
+    private readonly Keys activationKey;
     private readonly int explosionCount;
     private readonly float firstExplosionDistanceMeters;
     private readonly float totalDistanceMeters;
@@ -27,6 +29,7 @@ public sealed class AirStrike : Script
     {
         ScriptSettings settings = ScriptSettings.Load(@"scripts\AirStrike\AirStrike.ini");
 
+        activationKey = ReadKey(settings, "ActivationKey", Keys.None);
         explosionCount = Math.Max(1, settings.GetValue("AirStrike", "ExplosionCount", DefaultExplosionCount));
         float firstExplosionDistanceYards = Math.Max(0.0f, settings.GetValue("AirStrike", "FirstExplosionDistanceYards", DefaultFirstExplosionDistanceYards));
         float totalDistanceYards = Math.Max(1.0f, settings.GetValue("AirStrike", "TotalDistanceYards", DefaultTotalDistanceYards));
@@ -39,27 +42,27 @@ public sealed class AirStrike : Script
         Tick += OnTick;
     }
 
+    private static Keys ReadKey(ScriptSettings settings, string settingName, Keys defaultKey)
+    {
+        string configuredKey = settings.GetValue("AirStrike", settingName, defaultKey.ToString());
+        Keys parsedKey;
+
+        if (Enum.TryParse(configuredKey, true, out parsedKey))
+        {
+            return parsedKey;
+        }
+
+        return defaultKey;
+    }
+
     private void OnKeyDown(object sender, KeyEventArgs eventArgs)
     {
-        if (eventArgs.KeyCode != Keys.F8)
+        if (activationKey == Keys.None || eventArgs.KeyCode != activationKey)
         {
             return;
         }
 
-        Ped player = Game.LocalPlayerPed;
-        if (player == null || !player.Exists())
-        {
-            return;
-        }
-
-        strikeOrigin = player.Position;
-        strikeForward = player.ForwardVector;
-        strikeForward.Z = 0.0f;
-        strikeForward.Normalize();
-        strikeOwner = player;
-        nextExplosionIndex = 0;
-        nextExplosionTime = Game.GameTime;
-        strikeActive = true;
+        StartAirStrike();
     }
 
     private void OnTick(object sender, EventArgs eventArgs)
@@ -79,6 +82,26 @@ public sealed class AirStrike : Script
         }
 
         nextExplosionTime = Game.GameTime + explosionDelayMilliseconds;
+    }
+
+    [Browsable(true)]
+    [Description("Call Air Strike")]
+    private void StartAirStrike()
+    {
+        Ped player = Game.LocalPlayerPed;
+        if (player == null || !player.Exists())
+        {
+            return;
+        }
+
+        strikeOrigin = player.Position;
+        strikeForward = player.ForwardVector;
+        strikeForward.Z = 0.0f;
+        strikeForward.Normalize();
+        strikeOwner = player;
+        nextExplosionIndex = 0;
+        nextExplosionTime = Game.GameTime;
+        strikeActive = true;
     }
 
     private void CreateExplosion(int index)

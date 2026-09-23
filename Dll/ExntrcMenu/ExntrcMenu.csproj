@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <DeployDirectory Condition="'$(DeployDirectory)' == '' and '$(GameRoot)' != ''">$(GameRoot)\scripts\$(MSBuildProjectName)</DeployDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LemonUI.SHVDN3" Version="2.2.0" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="ScriptHookVDotNet3" Version="3.6.0" ExcludeAssets="all" />
+    <Reference Include="ScriptHookVDotNet3">
+      <HintPath>$(GameRoot)\ScriptHookVDotNet3.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="ValidateGameRoot" BeforeTargets="ResolveReferences" Condition="!Exists('$(GameRoot)\ScriptHookVDotNet3.dll')">
+    <Error Text="Pass /p:GameRoot=&quot;path to Grand Theft Auto V Enhanced&quot; or run Deploy-Mods.ps1 from the repository root." />
+  </Target>
+
+  <Target Name="DeployToScripts" AfterTargets="Build" Condition="'$(DeployDirectory)' != ''">
+    <MakeDir Directories="$(DeployDirectory);$(DeployDirectory)\.." />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DeployDirectory)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(MSBuildProjectDirectory)\ExntrcMenu.ini" DestinationFolder="$(DeployDirectory)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(TargetDir)LemonUI.SHVDN3.dll" DestinationFolder="$(DeployDirectory)\.." SkipUnchangedFiles="true" />
+    <Delete Files="$(DeployDirectory)\ExntrcMenu.cs;$(DeployDirectory)\ExntrcMenu.csproj;$(DeployDirectory)\Directory.Build.props;$(DeployDirectory)\ExntrcMenu.pdb;$(DeployDirectory)\LemonUI.SHVDN3.dll" />
+    <RemoveDir Directories="$(DeployDirectory)\obj" />
+  </Target>
+</Project>

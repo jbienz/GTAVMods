@@ -24,6 +24,8 @@ Grand Theft Auto V Enhanced/
 
 The keys can be changed in `FriendAndFoe.ini` using names recognized by `System.Windows.Forms.Keys`. An invalid value falls back to the default key.
 
+When `ExntrcMenu` is installed, the same actions appear alphabetically under the `FriendAndFoe` submenu. FriendAndFoe remains fully usable without the menu.
+
 ## Configuration
 
 Settings are read from `FriendAndFoe.ini` when the script loads.

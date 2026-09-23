@@ -16,17 +16,15 @@ Grand Theft Auto V Enhanced/
 
 ## Controls
 
-| Key | Action |
-| --- | --- |
-| `F10` | Enable or disable special-flight handling on the current vehicle. |
+The default direct key is disabled. When `ExntrcMenu` is installed, use `VehicleFlight > Toggle Vehicle Flight`.
 
-The key can be changed through `VehicleFlight.ini`.
+Set `ToggleKey` in `VehicleFlight.ini` to any `System.Windows.Forms.Keys` name to enable a direct shortcut. VehicleFlight remains fully usable without the menu when a direct key is configured.
 
 ## Configuration
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `ToggleKey` | `F10` | Key used to toggle special-flight handling. |
+| `ToggleKey` | `None` | Optional direct key used to toggle special-flight handling. `None` disables the shortcut. |
 
 ## Behavior
 

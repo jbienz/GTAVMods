@@ -37,7 +37,8 @@ Settings are read from `FriendAndFoe.ini` when the script loads.
 | `ThreatScanRadiusFeet` | `300` | Radius in which crew members search for threats to the player. The minimum effective value is `1`. |
 | `MaximumCrewSize` | `7` | Maximum number of recruited followers. Values are limited to the range `1` through `7`. |
 | `CombatRefreshMilliseconds` | `1000` | Interval between combat-target updates. The minimum effective value is `250`. |
-| `ArmUnarmedRecruits` | `true` | Gives an unarmed recruit a pistol with ammunition. |
+| `ArmUnarmedRecruits` | `true` | Gives an unarmed recruit the configured weapon with ammunition. |
+| `RecruitWeapon` | `UpNAtomizer` | `WeaponHash` name given to unarmed recruits. Invalid values fall back to `UpNAtomizer`. |
 | `IncludePolice` | `false` | Allows police officers to be selected by recruit and hostile commands. |
 | `IncludeMissionPeds` | `false` | Allows mission-controlled or scripted NPCs to be selected. Enabling this may interfere with missions. |
 | `IncludeAnimals` | `false` | Allows non-human NPCs to be selected. |

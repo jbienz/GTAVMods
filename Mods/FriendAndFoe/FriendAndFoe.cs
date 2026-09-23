@@ -12,6 +12,7 @@ public sealed class FriendAndFoe : Script
     private const float DefaultThreatScanRadiusFeet = 300.0f;
     private const int DefaultMaximumCrewSize = 7;
     private const int DefaultCombatRefreshMilliseconds = 1000;
+    private const WeaponHash DefaultRecruitWeapon = WeaponHash.UpNAtomizer;
 
     private readonly Keys recruitKey;
     private readonly Keys hostileKey;
@@ -21,6 +22,7 @@ public sealed class FriendAndFoe : Script
     private readonly int maximumCrewSize;
     private readonly int combatRefreshMilliseconds;
     private readonly bool armUnarmedRecruits;
+    private readonly WeaponHash recruitWeapon;
     private readonly bool includePolice;
     private readonly bool includeMissionPeds;
     private readonly bool includeAnimals;
@@ -44,6 +46,7 @@ public sealed class FriendAndFoe : Script
         maximumCrewSize = Math.Min(7, Math.Max(1, settings.GetValue("FriendAndFoe", "MaximumCrewSize", DefaultMaximumCrewSize)));
         combatRefreshMilliseconds = Math.Max(250, settings.GetValue("FriendAndFoe", "CombatRefreshMilliseconds", DefaultCombatRefreshMilliseconds));
         armUnarmedRecruits = settings.GetValue("FriendAndFoe", "ArmUnarmedRecruits", true);
+        recruitWeapon = ReadWeaponHash(settings, "RecruitWeapon", DefaultRecruitWeapon);
         includePolice = settings.GetValue("FriendAndFoe", "IncludePolice", false);
         includeMissionPeds = settings.GetValue("FriendAndFoe", "IncludeMissionPeds", false);
         includeAnimals = settings.GetValue("FriendAndFoe", "IncludeAnimals", false);
@@ -67,6 +70,19 @@ public sealed class FriendAndFoe : Script
         }
 
         return defaultKey;
+    }
+
+    private static WeaponHash ReadWeaponHash(ScriptSettings settings, string settingName, WeaponHash defaultWeapon)
+    {
+        string configuredWeapon = settings.GetValue("FriendAndFoe", settingName, defaultWeapon.ToString());
+        WeaponHash parsedWeapon;
+
+        if (Enum.TryParse(configuredWeapon, true, out parsedWeapon) && Enum.IsDefined(typeof(WeaponHash), parsedWeapon))
+        {
+            return parsedWeapon;
+        }
+
+        return defaultWeapon;
     }
 
     private void OnKeyDown(object sender, KeyEventArgs eventArgs)
@@ -155,7 +171,7 @@ public sealed class FriendAndFoe : Script
 
             if (armUnarmedRecruits && ped.Weapons.Current.Hash == WeaponHash.Unarmed)
             {
-                ped.Weapons.Give(WeaponHash.Pistol, 90, true, true);
+                ped.Weapons.Give(recruitWeapon, 90, true, true);
             }
 
             crew.Add(state);

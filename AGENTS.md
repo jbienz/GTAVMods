@@ -26,6 +26,14 @@ This is a multi-root VS Code workspace with two workspace folders:
 4. Keep shared project requirements in README.md at the root of the repo. Do not repeat them in mod-specific README.md files.
 5. Make sure README.md at the root of the repo includes a brief description of the mod and links to the mod-specific folder.
 
+## Validation policy
+
+After editing a mod, use focused diagnostics or other checks directly relevant to the changed scripts.
+
+Do not routinely run `git diff`, `git diff --check`, `git status`, file parity comparisons, repository-wide whitespace checks, or similar Git/repository inspection commands. Only run those checks when the user explicitly requests them or when a specific problem requires them for diagnosis.
+
+The required backup from `Grand Theft Auto V Enhanced/scripts/<ModName>/` to `GTAVMods/Mods/<ModName>/` does not require a subsequent byte-for-byte comparison unless requested.
+
 ## API Documentation
 
 Develop scripts using ScriptHookVDotNetEnhanced.

@@ -16,3 +16,11 @@ Calls in a configurable line of explosions along the ground in front of the play
 ### [FriendAndFoe](Mods/FriendAndFoe)
 
 Recruits nearby NPCs into the player's crew or turns them hostile. Configuration options control the command keys, selection radius, crew size, combat updates, equipment, and which types of NPCs can be affected.
+
+### [VehicleFlight](Mods/VehicleFlight)
+
+Toggles ScriptHookVDotNetEnhanced special-flight handling on the vehicle the player is currently driving.
+
+### [SpawnDeluxo](Mods/SpawnDeluxo)
+
+Attempts to stream and spawn the Deluxo vehicle ahead of the player in Story Mode.

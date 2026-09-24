@@ -34,11 +34,33 @@ No separate LemonUI download is required. The project restores it from NuGet and
 | Input | Action |
 | --- | --- |
 | `F5` | Open or close the menu. Configurable through `ExntrcMenu.ini`. |
+| Hold `LB` + `RB` + `LT`, then press `RT` | Open or close the menu. Configurable through `ExntrcMenu.ini`. |
 | GTA frontend navigation | Move through menu items using the keyboard or controller mappings configured by GTA. |
 | GTA frontend accept | Open a submenu or activate an action. |
 | GTA frontend cancel | Return to the previous menu or close the menu. |
 
 LemonUI handles keyboard and controller navigation after the menu opens. ExntrcMenu does not define separate custom navigation bindings.
+
+`ControllerChord` accepts one to four comma-separated `GTA.Control` names. Hold every configured control except the last, then press the last control to toggle the menu. For example:
+
+```ini
+; Press Y.
+ControllerChord=FrontendY
+
+; Hold LB, then press Y.
+ControllerChord=FrontendLb,FrontendY
+
+; Hold LB and RB, then press Y.
+ControllerChord=FrontendLb,FrontendRb,FrontendY
+
+; Hold LB, RB, and LT, then press RT.
+ControllerChord=FrontendLb,FrontendRb,FrontendLt,FrontendRt
+
+; Disable controller opening.
+ControllerChord=
+```
+
+Invalid or repeated control names disable the controller chord and produce an in-game notification when the script loads. The keyboard binding remains available.
 
 ## Action Discovery
 
@@ -66,4 +88,4 @@ private void RecruitNearbyPeds()
 
 - `ExntrcMenu.cs` contains discovery, sorting, caching, invocation, and LemonUI menu construction.
 - `ExntrcMenu.csproj` restores dependencies, builds the DLL, and deploys the menu and LemonUI.
-- `ExntrcMenu.ini` contains the configurable menu-open key.
+- `ExntrcMenu.ini` contains the configurable keyboard and controller menu bindings.

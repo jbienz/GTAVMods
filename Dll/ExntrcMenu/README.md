@@ -41,7 +41,7 @@ No separate LemonUI download is required. The project restores it from NuGet and
 
 LemonUI handles keyboard and controller navigation after the menu opens. ExntrcMenu does not define separate custom navigation bindings.
 
-`ControllerChord` accepts one to four comma-separated `GTA.Input.ControlAction` names. Hold every configured control except the last, then press the last control to toggle the menu. For example:
+`ControllerChord` accepts one to four comma-separated `GTA.Control` names. Hold every configured control except the last, then press the last control to toggle the menu. For example:
 
 ```ini
 ; Press Y.

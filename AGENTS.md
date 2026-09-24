@@ -59,6 +59,20 @@ After editing a mod, use focused diagnostics or other checks directly relevant t
 
 Do not routinely run `git diff`, `git diff --check`, `git status`, file parity comparisons, repository-wide whitespace checks, or similar Git/repository inspection commands. Only run those checks when the user explicitly requests them or when a specific problem requires them for diagnosis.
 
+## Runtime crash troubleshooting
+
+When GTA V crashes while entering Story Mode or invoking a mod action, diagnose from runtime evidence before changing mod code:
+
+1. Record the crash time and inspect `ScriptHookVDotNet.log`, `ScriptHookV.log`, and `asiloader.log` under the game root. Check file timestamps first so stale logs are not mistaken for the current launch.
+2. Query recent Windows Application events for `.NET Runtime` event ID `1026`, `Application Error` event ID `1000`, and relevant Windows Error Reporting event ID `1001` records. The `.NET Runtime` stack is the primary source when SHVDN cannot write its log.
+3. Identify the first mod method in the stack and the lowest SHVDN or GTA API call beneath it. Distinguish script compilation failures from runtime exceptions and native access violations.
+4. Confirm the deployed source matches the repository source and inspect the exact installed versions and timestamps of `ScriptHookVDotNet.asi`, `ScriptHookVDotNet2.dll`, and `ScriptHookVDotNet3.dll`.
+5. Reproduce compile behavior with the .NET Framework compiler against the installed `ScriptHookVDotNet3.dll`. Compile every runtime script after an SHVDN upgrade or rollback, and build DLL projects against the same game assembly.
+6. Search the official SHVDN issues and discussions for the exact exception, native-memory method, GTA API member, game edition, and nightly version before introducing a compatibility workaround.
+7. Form one local hypothesis from the stack, make the smallest targeted fix, rerun the focused compile or build, then deploy through `Deploy-Mods.ps1`.
+
+Do not broadly replace supported SHVDN APIs merely because a nightly build faults inside them. Treat reproducible failures in `SHVDN.NativeMemory` or ordinary API calls as possible upstream regressions, preserve the crash evidence, and prefer upgrading, rolling back, or reporting the issue when appropriate.
+
 ## API Documentation
 
 Develop scripts using ScriptHookVDotNetEnhanced.

@@ -64,7 +64,7 @@ public sealed class SpecialVehicles : Script
         }
 
         Vector3 spawnPosition = player.Position + (player.ForwardVector * spawnDistanceMeters);
-        Vehicle deluxo = Vehicle.Create(deluxoModel, spawnPosition, player.Heading);
+        Vehicle deluxo = World.CreateVehicle(deluxoModel, spawnPosition, player.Heading);
         deluxoModel.MarkAsNoLongerNeeded();
 
         if (deluxo == null || !deluxo.Exists())

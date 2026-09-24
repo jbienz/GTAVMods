@@ -58,9 +58,10 @@ public sealed class VehicleFlight : Script
             return;
         }
 
-        bool wasActive = vehicle.SpecialFlightModeAllowed;
-        vehicle.SpecialFlightModeAllowed = !wasActive;
-        bool changed = vehicle.SpecialFlightModeAllowed != wasActive;
+        bool wasActive = vehicle.IsSpecialFlightModeActivated();
+        bool changed = wasActive
+            ? vehicle.DeactivateSpecialFlightMode()
+            : vehicle.ActivateSpecialFlightMode();
 
         if (!changed)
         {

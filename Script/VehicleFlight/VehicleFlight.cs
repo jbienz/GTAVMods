@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using GTA;
 using GTA.UI;
 
+[Description("Vehicle Flight")]
 public sealed class VehicleFlight : Script
 {
     private readonly Keys toggleKey;
@@ -57,10 +58,9 @@ public sealed class VehicleFlight : Script
             return;
         }
 
-        bool wasActive = vehicle.IsSpecialFlightModeActivated();
-        bool changed = wasActive
-            ? vehicle.DeactivateSpecialFlightMode()
-            : vehicle.ActivateSpecialFlightMode();
+        bool wasActive = vehicle.SpecialFlightModeAllowed;
+        vehicle.SpecialFlightModeAllowed = !wasActive;
+        bool changed = vehicle.SpecialFlightModeAllowed != wasActive;
 
         if (!changed)
         {

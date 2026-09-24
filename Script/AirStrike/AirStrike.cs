@@ -4,12 +4,12 @@ using System.Windows.Forms;
 using GTA;
 using GTA.Math;
 
+[Description("Air Strike")]
 public sealed class AirStrike : Script
 {
-    private const float YardsToMeters = 0.9144f;
     private const int DefaultExplosionCount = 6;
-    private const float DefaultFirstExplosionDistanceYards = 10.0f;
-    private const float DefaultTotalDistanceYards = 30.0f;
+    private const float DefaultFirstExplosionDistanceMeters = 9.144f;
+    private const float DefaultTotalDistanceMeters = 27.432f;
     private const int DefaultExplosionDelayMilliseconds = 1000;
 
     private readonly Keys activationKey;
@@ -31,11 +31,9 @@ public sealed class AirStrike : Script
 
         activationKey = ReadKey(settings, "ActivationKey", Keys.None);
         explosionCount = Math.Max(1, settings.GetValue("AirStrike", "ExplosionCount", DefaultExplosionCount));
-        float firstExplosionDistanceYards = Math.Max(0.0f, settings.GetValue("AirStrike", "FirstExplosionDistanceYards", DefaultFirstExplosionDistanceYards));
-        float totalDistanceYards = Math.Max(1.0f, settings.GetValue("AirStrike", "TotalDistanceYards", DefaultTotalDistanceYards));
-        totalDistanceYards = Math.Max(firstExplosionDistanceYards, totalDistanceYards);
-        firstExplosionDistanceMeters = firstExplosionDistanceYards * YardsToMeters;
-        totalDistanceMeters = totalDistanceYards * YardsToMeters;
+        firstExplosionDistanceMeters = Math.Max(0.0f, settings.GetValue("AirStrike", "FirstExplosionDistanceMeters", DefaultFirstExplosionDistanceMeters));
+        totalDistanceMeters = Math.Max(1.0f, settings.GetValue("AirStrike", "TotalDistanceMeters", DefaultTotalDistanceMeters));
+        totalDistanceMeters = Math.Max(firstExplosionDistanceMeters, totalDistanceMeters);
         explosionDelayMilliseconds = Math.Max(0, settings.GetValue("AirStrike", "ExplosionDelayMilliseconds", DefaultExplosionDelayMilliseconds));
 
         KeyDown += OnKeyDown;

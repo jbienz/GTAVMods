@@ -12,7 +12,7 @@ public sealed class ExntrcMenu : Script
     private readonly ObjectPool menuPool = new ObjectPool();
     private readonly NativeMenu mainMenu;
     private readonly Keys openKey;
-    private readonly GTA.Control[] controllerChord;
+    private readonly GTA.Input.ControlAction[] controllerChord;
     private bool menusBuilt;
 
     public ExntrcMenu()
@@ -48,41 +48,41 @@ public sealed class ExntrcMenu : Script
         return defaultKey;
     }
 
-    private static GTA.Control[] ReadControllerChord(ScriptSettings settings, out string error)
+    private static GTA.Input.ControlAction[] ReadControllerChord(ScriptSettings settings, out string error)
     {
         string configuredChord = settings.GetValue("ExntrcMenu", "ControllerChord", "FrontendLb,FrontendRb,FrontendLt,FrontendRt");
         error = null;
 
         if (string.IsNullOrWhiteSpace(configuredChord))
         {
-            return new GTA.Control[0];
+            return new GTA.Input.ControlAction[0];
         }
 
         string[] configuredControls = configuredChord.Split(',');
         if (configuredControls.Length > 4)
         {
             error = "specify no more than four controls.";
-            return new GTA.Control[0];
+            return new GTA.Input.ControlAction[0];
         }
 
-        List<GTA.Control> controls = new List<GTA.Control>();
+        List<GTA.Input.ControlAction> controls = new List<GTA.Input.ControlAction>();
         for (int index = 0; index < configuredControls.Length; index++)
         {
             string configuredControl = configuredControls[index].Trim();
-            GTA.Control parsedControl;
+            GTA.Input.ControlAction parsedControl;
 
             if (configuredControl.Length == 0 ||
                 !Enum.TryParse(configuredControl, true, out parsedControl) ||
-                !Enum.IsDefined(typeof(GTA.Control), parsedControl))
+                !Enum.IsDefined(typeof(GTA.Input.ControlAction), parsedControl))
             {
                 error = "'" + configuredControl + "' is not a valid GTA control name.";
-                return new GTA.Control[0];
+                return new GTA.Input.ControlAction[0];
             }
 
             if (controls.Contains(parsedControl))
             {
                 error = "'" + configuredControl + "' is listed more than once.";
-                return new GTA.Control[0];
+                return new GTA.Input.ControlAction[0];
             }
 
             controls.Add(parsedControl);
@@ -124,11 +124,19 @@ public sealed class ExntrcMenu : Script
             List<MenuAction> actions = DiscoverActions(scriptInstance);
             if (actions.Count > 0)
             {
-                mods.Add(new DiscoveredMod(scriptInstance.GetType().Name, actions));
+                mods.Add(new DiscoveredMod(GetModDisplayName(scriptInstance.GetType()), actions));
             }
         }
 
         return mods;
+    }
+
+    private static string GetModDisplayName(Type scriptType)
+    {
+        DescriptionAttribute description = Attribute.GetCustomAttribute(scriptType, typeof(DescriptionAttribute), false) as DescriptionAttribute;
+        return description == null || string.IsNullOrWhiteSpace(description.Description)
+            ? scriptType.Name
+            : description.Description;
     }
 
     private static object[] GetRunningScriptInstances()
@@ -303,19 +311,19 @@ public sealed class ExntrcMenu : Script
         // Earlier controls are modifiers; the last control edge-triggers the chord once per press.
         for (int index = 0; index < controllerChord.Length - 1; index++)
         {
-            if (!Game.IsControlPressed(controllerChord[index]))
+            if (!GTA.Input.Controls.IsDisabledControlPressed(GTA.Input.ControlType.FrontendControl, controllerChord[index]))
             {
                 return false;
             }
         }
 
-        GTA.Control trigger = controllerChord[controllerChord.Length - 1];
-        if (!Game.IsControlJustPressed(trigger))
+        GTA.Input.ControlAction trigger = controllerChord[controllerChord.Length - 1];
+        if (!GTA.Input.Controls.IsDisabledControlJustPressed(GTA.Input.ControlType.FrontendControl, trigger))
         {
             return false;
         }
 
-        Game.DisableControlThisFrame(trigger);
+        GTA.Input.Controls.DisableControlActionThisFrame(GTA.Input.ControlType.FrontendControl, trigger, true);
         return true;
     }
 

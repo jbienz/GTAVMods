@@ -48,20 +48,27 @@ function Sync-ScriptMod {
     $sourceFiles = @(Get-ChildItem $SourceDirectory.FullName -File -Recurse)
     $sourceRelativePaths = @{}
     $copiedCount = 0
+    $failedCopyCount = 0
 
     foreach ($sourceFile in $sourceFiles) {
         $relativePath = $sourceFile.FullName.Substring($SourceDirectory.FullName.Length).TrimStart('\')
         $sourceRelativePaths[$relativePath] = $true
         $destinationPath = Join-Path $DestinationDirectory $relativePath
 
-        if (Test-FileContentEqual $sourceFile.FullName $destinationPath) {
-            continue
-        }
+        try {
+            if (Test-FileContentEqual $sourceFile.FullName $destinationPath) {
+                continue
+            }
 
-        $destinationParent = Split-Path $destinationPath -Parent
-        New-Item -ItemType Directory -Force -Path $destinationParent | Out-Null
-        Copy-Item $sourceFile.FullName $destinationPath -Force
-        $copiedCount++
+            $destinationParent = Split-Path $destinationPath -Parent
+            New-Item -ItemType Directory -Force -Path $destinationParent | Out-Null
+            Copy-Item $sourceFile.FullName $destinationPath -Force
+            $copiedCount++
+        }
+        catch {
+            $failedCopyCount++
+            Write-Warning "Could not copy '$($sourceFile.FullName)' to '$destinationPath': $($_.Exception.Message)"
+        }
     }
 
     $removedCount = 0
@@ -78,7 +85,7 @@ function Sync-ScriptMod {
         Where-Object { -not (Get-ChildItem $_.FullName -Force) } |
         Remove-Item -Force
 
-    Write-Host "Script/$($SourceDirectory.Name): copied $copiedCount, removed $removedCount"
+    Write-Host "Script/$($SourceDirectory.Name): copied $copiedCount, failed $failedCopyCount, removed $removedCount"
 }
 
 foreach ($scriptMod in @(Get-ChildItem $scriptSourceRoot -Directory | Sort-Object Name)) {

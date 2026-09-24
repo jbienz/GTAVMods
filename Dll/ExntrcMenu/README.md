@@ -41,7 +41,7 @@ No separate LemonUI download is required. The project restores it from NuGet and
 
 LemonUI handles keyboard and controller navigation after the menu opens. ExntrcMenu does not define separate custom navigation bindings.
 
-`ControllerChord` accepts one to four comma-separated `GTA.Control` names. Hold every configured control except the last, then press the last control to toggle the menu. For example:
+`ControllerChord` accepts one to four comma-separated `GTA.Input.ControlAction` names. Hold every configured control except the last, then press the last control to toggle the menu. For example:
 
 ```ini
 ; Press Y.
@@ -69,6 +69,9 @@ The first time the menu opens, ExntrcMenu inspects the live SHVDN script instanc
 A mod exposes an action with standard component-model attributes:
 
 ```csharp
+[Description("Friend And Foe")]
+public sealed class FriendAndFoe : Script
+{
 [Browsable(true)]
 [Category("NPC Commands")]
 [Description("Recruit Nearby NPCs")]
@@ -76,8 +79,10 @@ private void RecruitNearbyPeds()
 {
     // The owning mod performs its normal action here.
 }
+}
 ```
 
+- A class-level `Description` supplies the mod submenu name. The script class name is used when it is omitted.
 - `Browsable(true)` marks a parameterless `void` instance method as a menu action.
 - `Description` supplies the visible menu text. The method name is used when it is omitted.
 - `Category` creates a separator within the mod submenu.

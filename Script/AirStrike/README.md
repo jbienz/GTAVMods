@@ -30,14 +30,14 @@ Settings are read from `AirStrike.ini` when the script loads.
 | --- | ---: | --- |
 | `ActivationKey` | `None` | Optional direct key used to call an air strike. `None` disables the shortcut. |
 | `ExplosionCount` | `6` | Number of explosions in one strike. Values below `1` are raised to `1`. |
-| `FirstExplosionDistanceYards` | `10` | Distance from the player to the first explosion. Values below `0` are raised to `0`. |
-| `TotalDistanceYards` | `30` | Distance from the player to the final explosion. This cannot be less than the first-explosion distance. |
+| `FirstExplosionDistanceMeters` | `9.144` | Distance in meters from the player to the first explosion. Values below `0` are raised to `0`. |
+| `TotalDistanceMeters` | `27.432` | Distance in meters from the player to the final explosion. This cannot be less than the first-explosion distance. |
 | `ExplosionDelayMilliseconds` | `1000` | Delay between explosions. Set to `0` to create them without an intentional delay. |
 
 ## Behavior
 
 - Explosion positions are distributed evenly between the first and final configured distances.
-- Distances are configured in yards and converted to game-world meters by the script.
+- Distances are configured directly in game-world meters.
 - The player's horizontal facing direction is captured when the strike begins, so turning afterward does not redirect an active strike.
 - Each target position is adjusted to the detected ground height when ground detection succeeds.
 

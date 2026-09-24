@@ -6,11 +6,11 @@ using GTA;
 using GTA.Native;
 using GTA.UI;
 
+[Description("Friend and Foe")]
 public sealed class FriendAndFoe : Script
 {
-    private const float FeetToMeters = 0.3048f;
-    private const float DefaultRadiusFeet = 30.0f;
-    private const float DefaultThreatScanRadiusFeet = 300.0f;
+    private const float DefaultRadiusMeters = 9.144f;
+    private const float DefaultThreatScanRadiusMeters = 91.44f;
     private const int DefaultMaximumCrewSize = 7;
     private const int DefaultCombatRefreshMilliseconds = 1000;
     private const WeaponHash DefaultRecruitWeapon = WeaponHash.UpNAtomizer;
@@ -42,8 +42,8 @@ public sealed class FriendAndFoe : Script
         recruitKey = ReadKey(settings, "RecruitKey", Keys.F6);
         hostileKey = ReadKey(settings, "HostileKey", Keys.F7);
         dismissKey = ReadKey(settings, "DismissKey", Keys.F9);
-        radiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "RadiusFeet", DefaultRadiusFeet)) * FeetToMeters;
-        threatScanRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "ThreatScanRadiusFeet", DefaultThreatScanRadiusFeet)) * FeetToMeters;
+        radiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "RadiusMeters", DefaultRadiusMeters));
+        threatScanRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "ThreatScanRadiusMeters", DefaultThreatScanRadiusMeters));
         maximumCrewSize = Math.Min(7, Math.Max(1, settings.GetValue("FriendAndFoe", "MaximumCrewSize", DefaultMaximumCrewSize)));
         combatRefreshMilliseconds = Math.Max(250, settings.GetValue("FriendAndFoe", "CombatRefreshMilliseconds", DefaultCombatRefreshMilliseconds));
         armUnarmedRecruits = settings.GetValue("FriendAndFoe", "ArmUnarmedRecruits", true);

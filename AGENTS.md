@@ -40,6 +40,8 @@ All gameplay mods must remain fully usable without `ExntrcMenu` and must not ref
 
 Expose a menu action by decorating a normal, parameterless instance method with `[Browsable(true)]`. Use `[Description("Menu Text")]` for the visible action text and optional `[Category("Section Name")]` to place the action under a separator within the mod submenu. Keep the gameplay logic in the owning mod; introduce a parameterless wrapper when an existing method requires runtime arguments such as the player ped.
 
+Decorate each gameplay mod class with `[Description("Mod Name")]` to set its visible submenu name. Use the class name split into words by default, such as `[Description("Special Weapons")]` for `SpecialWeapons`. ExntrcMenu falls back to the raw class name when the attribute is absent or blank.
+
 When changing menu actions:
 
 1. Add an attributed method for every new player-triggerable action that should appear in the menu.

@@ -31,9 +31,13 @@ Provides the LemonUI-based `eXntrc's Mods` menu. It discovers attributed actions
 
 Recruits nearby NPCs into the player's crew or turns them hostile. Configuration options control the command keys, selection radius, crew size, combat updates, equipment, and which types of NPCs can be affected.
 
-### [SpawnDeluxo](Script/SpawnDeluxo)
+### [SpecialVehicles](Script/SpecialVehicles)
 
-Attempts to stream and spawn the Deluxo vehicle ahead of the player in Story Mode.
+Provides special vehicle actions, beginning with spawning a Deluxo ahead of the player in Story Mode.
+
+### [SpecialWeapons](Script/SpecialWeapons)
+
+Adds unusual weapon combinations. Its America action gives the player a minigun that launches additional Firework Launcher projectiles while firing.
 
 ### [VehicleFlight](Script/VehicleFlight)
 

@@ -35,8 +35,8 @@ Settings are read from `FriendAndFoe.ini` when the script loads.
 | `RecruitKey` | `F6` | Recruits eligible nearby NPCs into the player's group. |
 | `HostileKey` | `F7` | Makes eligible nearby NPCs hostile. |
 | `DismissKey` | `F9` | Restores all NPCs currently managed by the mod. |
-| `RadiusFeet` | `30` | Radius used by the recruit and hostile commands. The minimum effective value is `1`. |
-| `ThreatScanRadiusFeet` | `300` | Radius in which crew members search for threats to the player. The minimum effective value is `1`. |
+| `RadiusMeters` | `9.144` | Radius in meters used by the recruit and hostile commands. The minimum effective value is `1`. |
+| `ThreatScanRadiusMeters` | `91.44` | Radius in meters in which crew members search for threats to the player. The minimum effective value is `1`. |
 | `MaximumCrewSize` | `7` | Maximum number of recruited followers. Values are limited to the range `1` through `7`. |
 | `CombatRefreshMilliseconds` | `1000` | Interval between combat-target updates. The minimum effective value is `250`. |
 | `ArmUnarmedRecruits` | `true` | Gives an unarmed recruit the configured weapon with ammunition. |

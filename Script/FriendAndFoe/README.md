@@ -1,6 +1,6 @@
 # FriendAndFoe
 
-FriendAndFoe lets the player recruit nearby NPCs as followers or turn nearby NPCs hostile. Recruited crew members follow the player and defend against tracked hostiles and other nearby threats, while enraged NPCs attack the player or the closest crew member.
+FriendAndFoe lets the player recruit nearby NPCs or animals as followers, turn nearby human NPCs hostile, and toggle crew hunting. Recruited crew members follow the player and defend against tracked hostiles and other nearby human threats, while enraged NPCs attack the player or the closest crew member.
 
 ## Installation
 
@@ -18,9 +18,11 @@ Grand Theft Auto V Enhanced/
 
 | Default key | Action |
 | --- | --- |
-| `F6` | Recruit eligible NPCs within the configured command radius. |
-| `F7` | Make eligible NPCs within the configured command radius hostile to the player and crew. |
+| `F6` | Recruit eligible human NPCs within `RecruitRadius`. |
+| `F7` | Make eligible human NPCs within `HostileRadius` hostile to the player and crew. |
+| `F8` | Recruit eligible animals within `AnimalRadius`. |
 | `F9` | Dismiss the crew and restore all NPCs altered by the mod. |
+| `F10` | Toggle hunting of the animal models listed in `HuntedAnimals`. |
 
 The keys can be changed in `FriendAndFoe.ini` using names recognized by `System.Windows.Forms.Keys`. An invalid value falls back to the default key.
 
@@ -33,9 +35,13 @@ Settings are read from `FriendAndFoe.ini` when the script loads.
 | Setting | Default | Description |
 | --- | ---: | --- |
 | `RecruitKey` | `F6` | Recruits eligible nearby NPCs into the player's group. |
+| `RecruitAnimalsKey` | `F8` | Recruits eligible nearby animals into the player's group. |
 | `HostileKey` | `F7` | Makes eligible nearby NPCs hostile. |
+| `ToggleHuntingKey` | `F10` | Toggles crew hunting of configured animal models. |
 | `DismissKey` | `F9` | Restores all NPCs currently managed by the mod. |
-| `RadiusMeters` | `9.144` | Radius in meters used by the recruit and hostile commands. The minimum effective value is `1`. |
+| `RecruitRadius` | `9.144` | Radius in meters used by the human recruit command. The minimum effective value is `1`. |
+| `HostileRadius` | `9.144` | Radius in meters used by the hostile command. The minimum effective value is `1`. |
+| `AnimalRadius` | `185` | Radius in meters used by the animal recruit command. The minimum effective value is `1`. |
 | `ThreatScanRadiusMeters` | `91.44` | Radius in meters in which crew members search for threats to the player. The minimum effective value is `1`. |
 | `MaximumCrewSize` | `7` | Maximum number of recruited followers. Values are limited to the range `1` through `7`. |
 | `CombatRefreshMilliseconds` | `1000` | Interval between combat-target updates. The minimum effective value is `250`. |
@@ -43,20 +49,21 @@ Settings are read from `FriendAndFoe.ini` when the script loads.
 | `RecruitWeapon` | `UpNAtomizer` | `WeaponHash` name given to unarmed recruits. Invalid values fall back to `UpNAtomizer`. |
 | `IncludePolice` | `false` | Allows police officers to be selected by recruit and hostile commands. |
 | `IncludeMissionPeds` | `false` | Allows mission-controlled or scripted NPCs to be selected. Enabling this may interfere with missions. |
-| `IncludeAnimals` | `false` | Allows non-human NPCs to be selected. |
 | `HostilesIncludeCrew` | `false` | Allows the hostile command to remove current crew members and turn them against the player. |
+| `HuntedAnimals` | Wild game and birds | Comma-separated GTA animal model names hunted while hunting is enabled. The default includes boar, birds, coyotes, deer, cougars, and rabbits, but excludes pets and farm animals. |
 
 ## NPC Selection
 
-By default, the mod affects living human NPCs that are not police officers or mission entities. The player is never selected. NPCs already tracked as crew or hostiles are not added to the same list again.
+The normal recruit and hostile commands select living human NPCs. The animal recruit command selects only non-human NPCs. By default, police officers and mission entities are excluded, the player is never selected, and NPCs already tracked as crew or hostiles are not added again.
 
-The police, mission NPC, and animal filters only control selection by the recruit and hostile commands. Crew members can still defend the player against an NPC who becomes a threat through normal gameplay.
+The police and mission NPC filters apply to both human and animal recruitment where relevant. Crew members ignore animals as ambient threats unless hunting is enabled. While hunting is enabled, they attack only animal models listed in `HuntedAnimals`; recruited animals are always excluded from target selection.
 
 ## Combat And Restoration
 
 - Recruits join the player's group and remain with it until reset, death, removal, or script shutdown.
 - Hostiles periodically retarget the player or the closest valid crew member.
-- Crew members periodically target tracked hostiles or nearby NPCs who are fighting or have a hostile relationship with the player.
+- Crew members periodically target tracked hostiles or nearby human NPCs who are fighting or have a hostile relationship with the player.
+- Hunting is disabled each time the script loads and can be toggled independently of recruitment.
 - The mod records each affected NPC's relationship group, group membership, persistence, and behavior flags before changing them.
 - Pressing the dismiss key or unloading the script restores surviving tracked NPCs to their recorded state.
 - GTA notifications report how many NPCs were recruited, enraged, or reset.

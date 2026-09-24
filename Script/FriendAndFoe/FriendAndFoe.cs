@@ -9,16 +9,23 @@ using GTA.UI;
 [Description("Friend and Foe")]
 public sealed class FriendAndFoe : Script
 {
-    private const float DefaultRadiusMeters = 9.144f;
+    private const float DefaultRecruitRadiusMeters = 9.144f;
+    private const float DefaultHostileRadiusMeters = 9.144f;
+    private const float DefaultAnimalRadiusMeters = 185.0f;
     private const float DefaultThreatScanRadiusMeters = 91.44f;
     private const int DefaultMaximumCrewSize = 7;
     private const int DefaultCombatRefreshMilliseconds = 1000;
     private const WeaponHash DefaultRecruitWeapon = WeaponHash.UpNAtomizer;
+    private const string DefaultHuntedAnimals = "a_c_boar,a_c_chickenhawk,a_c_cormorant,a_c_coyote,a_c_crow,a_c_deer,a_c_mtlion,a_c_pigeon,a_c_rabbit_01,a_c_seagull";
 
     private readonly Keys recruitKey;
+    private readonly Keys recruitAnimalsKey;
     private readonly Keys hostileKey;
+    private readonly Keys toggleHuntingKey;
     private readonly Keys dismissKey;
-    private readonly float radiusMeters;
+    private readonly float recruitRadiusMeters;
+    private readonly float hostileRadiusMeters;
+    private readonly float animalRadiusMeters;
     private readonly float threatScanRadiusMeters;
     private readonly int maximumCrewSize;
     private readonly int combatRefreshMilliseconds;
@@ -26,13 +33,14 @@ public sealed class FriendAndFoe : Script
     private readonly WeaponHash recruitWeapon;
     private readonly bool includePolice;
     private readonly bool includeMissionPeds;
-    private readonly bool includeAnimals;
     private readonly bool hostilesIncludeCrew;
+    private readonly HashSet<int> huntedAnimalModels;
 
     private readonly List<PedState> crew = new List<PedState>();
     private readonly List<PedState> hostiles = new List<PedState>();
 
     private RelationshipGroup hostileRelationshipGroup;
+    private bool huntingEnabled;
     private int nextCombatRefreshTime;
 
     public FriendAndFoe()
@@ -40,9 +48,13 @@ public sealed class FriendAndFoe : Script
         ScriptSettings settings = ScriptSettings.Load(@"scripts\FriendAndFoe\FriendAndFoe.ini");
 
         recruitKey = ReadKey(settings, "RecruitKey", Keys.F6);
+    recruitAnimalsKey = ReadKey(settings, "RecruitAnimalsKey", Keys.F8);
         hostileKey = ReadKey(settings, "HostileKey", Keys.F7);
+    toggleHuntingKey = ReadKey(settings, "ToggleHuntingKey", Keys.F10);
         dismissKey = ReadKey(settings, "DismissKey", Keys.F9);
-        radiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "RadiusMeters", DefaultRadiusMeters));
+    recruitRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "RecruitRadius", DefaultRecruitRadiusMeters));
+    hostileRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "HostileRadius", DefaultHostileRadiusMeters));
+    animalRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "AnimalRadius", DefaultAnimalRadiusMeters));
         threatScanRadiusMeters = Math.Max(1.0f, settings.GetValue("FriendAndFoe", "ThreatScanRadiusMeters", DefaultThreatScanRadiusMeters));
         maximumCrewSize = Math.Min(7, Math.Max(1, settings.GetValue("FriendAndFoe", "MaximumCrewSize", DefaultMaximumCrewSize)));
         combatRefreshMilliseconds = Math.Max(250, settings.GetValue("FriendAndFoe", "CombatRefreshMilliseconds", DefaultCombatRefreshMilliseconds));
@@ -50,8 +62,8 @@ public sealed class FriendAndFoe : Script
         recruitWeapon = ReadWeaponHash(settings, "RecruitWeapon", DefaultRecruitWeapon);
         includePolice = settings.GetValue("FriendAndFoe", "IncludePolice", false);
         includeMissionPeds = settings.GetValue("FriendAndFoe", "IncludeMissionPeds", false);
-        includeAnimals = settings.GetValue("FriendAndFoe", "IncludeAnimals", false);
         hostilesIncludeCrew = settings.GetValue("FriendAndFoe", "HostilesIncludeCrew", false);
+        huntedAnimalModels = ReadModelHashes(settings, "HuntedAnimals", DefaultHuntedAnimals);
 
         hostileRelationshipGroup = World.AddRelationshipGroup("FRIEND_AND_FOE_HOSTILE");
 
@@ -86,6 +98,24 @@ public sealed class FriendAndFoe : Script
         return defaultWeapon;
     }
 
+    private static HashSet<int> ReadModelHashes(ScriptSettings settings, string settingName, string defaultModels)
+    {
+        string configuredModels = settings.GetValue("FriendAndFoe", settingName, defaultModels);
+        HashSet<int> modelHashes = new HashSet<int>();
+        string[] modelNames = configuredModels.Split(',');
+
+        for (int index = 0; index < modelNames.Length; index++)
+        {
+            string modelName = modelNames[index].Trim();
+            if (modelName.Length > 0)
+            {
+                modelHashes.Add(unchecked((int)AtHashValue.ComputeHash(modelName)));
+            }
+        }
+
+        return modelHashes;
+    }
+
     private void OnKeyDown(object sender, KeyEventArgs eventArgs)
     {
         Ped player = Game.LocalPlayerPed;
@@ -98,9 +128,17 @@ public sealed class FriendAndFoe : Script
         {
             RecruitNearbyPeds();
         }
+        else if (eventArgs.KeyCode == recruitAnimalsKey)
+        {
+            RecruitAnimals();
+        }
         else if (eventArgs.KeyCode == hostileKey)
         {
             MakeNearbyPedsHostile();
+        }
+        else if (eventArgs.KeyCode == toggleHuntingKey)
+        {
+            ToggleHunting();
         }
         else if (eventArgs.KeyCode == dismissKey)
         {
@@ -140,7 +178,21 @@ public sealed class FriendAndFoe : Script
             return;
         }
 
-        RecruitNearbyPeds(player);
+        RecruitNearbyPeds(player, false, recruitRadiusMeters);
+    }
+
+    [Browsable(true)]
+    [Category("NPC Commands")]
+    [Description("Recruit Animals")]
+    private void RecruitAnimals()
+    {
+        Ped player = Game.LocalPlayerPed;
+        if (!IsUsablePed(player))
+        {
+            return;
+        }
+
+        RecruitNearbyPeds(player, true, animalRadiusMeters);
     }
 
     [Browsable(true)]
@@ -155,6 +207,29 @@ public sealed class FriendAndFoe : Script
         }
 
         EnrageNearbyPeds(player);
+    }
+
+    [Browsable(true)]
+    [Category("NPC Commands")]
+    [Description("Toggle Hunting")]
+    private void ToggleHunting()
+    {
+        huntingEnabled = !huntingEnabled;
+
+        if (!huntingEnabled)
+        {
+            for (int index = 0; index < crew.Count; index++)
+            {
+                Ped ally = crew[index].Ped;
+                if (IsUsablePed(ally))
+                {
+                    ally.Task.ClearAll();
+                }
+            }
+        }
+
+        nextCombatRefreshTime = Game.GameTime;
+        ShowMessage("FriendAndFoe hunting " + (huntingEnabled ? "enabled." : "disabled."));
     }
 
     [Browsable(true)]
@@ -178,7 +253,7 @@ public sealed class FriendAndFoe : Script
         }
     }
 
-    private void RecruitNearbyPeds(Ped player)
+    private void RecruitNearbyPeds(Ped player, bool animalsOnly, float radiusMeters)
     {
         ConfigureRelationships(player);
         Ped[] nearbyPeds = World.GetNearbyPeds(player, radiusMeters);
@@ -188,7 +263,7 @@ public sealed class FriendAndFoe : Script
         for (int index = 0; index < nearbyPeds.Length && crew.Count < maximumCrewSize; index++)
         {
             Ped ped = nearbyPeds[index];
-            if (!CanAffectPed(ped) || ContainsPed(crew, ped) || ContainsPed(hostiles, ped))
+            if (!CanAffectPed(ped, animalsOnly) || ContainsPed(crew, ped) || ContainsPed(hostiles, ped))
             {
                 continue;
             }
@@ -206,7 +281,7 @@ public sealed class FriendAndFoe : Script
 
             ped.NeverLeavesGroup = true;
 
-            if (armUnarmedRecruits && ped.Weapons.Current.Hash == WeaponHash.Unarmed)
+            if (ped.IsHuman && armUnarmedRecruits && ped.Weapons.Current.Hash == WeaponHash.Unarmed)
             {
                 ped.Weapons.Give(recruitWeapon, 90, true, true);
             }
@@ -215,19 +290,20 @@ public sealed class FriendAndFoe : Script
             recruitedCount++;
         }
 
-        ShowMessage("FriendAndFoe recruited " + recruitedCount + " NPC(s). Crew: " + crew.Count + "/" + maximumCrewSize + ".");
+        string recruitType = animalsOnly ? " animal(s)" : " NPC(s)";
+        ShowMessage("FriendAndFoe recruited " + recruitedCount + recruitType + ". Crew: " + crew.Count + "/" + maximumCrewSize + ".");
     }
 
     private void EnrageNearbyPeds(Ped player)
     {
         ConfigureRelationships(player);
-        Ped[] nearbyPeds = World.GetNearbyPeds(player, radiusMeters);
+        Ped[] nearbyPeds = World.GetNearbyPeds(player, hostileRadiusMeters);
         int hostileCount = 0;
 
         for (int index = 0; index < nearbyPeds.Length; index++)
         {
             Ped ped = nearbyPeds[index];
-            if (!CanAffectPed(ped) || ContainsPed(hostiles, ped))
+            if (!CanAffectPed(ped, false) || ContainsPed(hostiles, ped))
             {
                 continue;
             }
@@ -362,6 +438,12 @@ public sealed class FriendAndFoe : Script
             return false;
         }
 
+        // Wildlife is never treated as an ambient threat unless hunting is enabled and its model is configured.
+        if (!candidate.IsHuman)
+        {
+            return huntingEnabled && huntedAnimalModels.Contains(candidate.Model.Hash);
+        }
+
         if (ContainsPed(hostiles, candidate) || Function.Call<bool>(Hash.IS_PED_IN_COMBAT, candidate.Handle, player.Handle))
         {
             return true;
@@ -371,14 +453,14 @@ public sealed class FriendAndFoe : Script
         return relationship == Relationship.Dislike || relationship == Relationship.Hate;
     }
 
-    private bool CanAffectPed(Ped ped)
+    private bool CanAffectPed(Ped ped, bool animalsOnly)
     {
         if (!IsUsablePed(ped) || ped.IsPlayer)
         {
             return false;
         }
 
-        if (!includeAnimals && !ped.IsHuman)
+        if (animalsOnly == ped.IsHuman)
         {
             return false;
         }

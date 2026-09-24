@@ -39,6 +39,6 @@ Provides special vehicle actions, beginning with spawning a Deluxo ahead of the 
 
 Adds unusual weapon combinations. Its America action gives the player a minigun that launches additional Firework Launcher projectiles while firing.
 
-### [VehicleFlight](Script/VehicleFlight)
+### [VehicleEffects](Script/VehicleEffects)
 
-Toggles ScriptHookVDotNetEnhanced special-flight handling on the vehicle the player is currently driving.
+Applies vehicle-only effects, including transparency and ScriptHookVDotNetEnhanced special-flight handling, to the vehicle the player is currently driving.
